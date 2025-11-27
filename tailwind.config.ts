@@ -47,15 +47,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+        battle: {
+          fire: "hsl(var(--battle-fire))",
+          energy: "hsl(var(--battle-energy))",
+          purple: "hsl(var(--battle-purple))",
+          glow: "hsl(var(--battle-glow))",
         },
       },
       borderRadius: {
@@ -84,6 +80,10 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-fire": "pulse-fire 2s ease-in-out infinite",
+        "float": "float 3s ease-in-out infinite",
+        "shake": "shake 0.3s ease-in-out",
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
       },
     },
   },
