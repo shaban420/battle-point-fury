@@ -8,7 +8,6 @@ import BattleActions from "@/components/BattleActions";
 import StakingModule from "@/components/StakingModule";
 import ActivityLog, { Activity } from "@/components/ActivityLog";
 import Leaderboard from "@/components/Leaderboard";
-import NFTSkins from "@/components/NFTSkins";
 import backgroundImage from "@/assets/battle-background.jpg";
 
 // Contract ABI (simplified for demo - in production, import full ABI)
@@ -50,9 +49,6 @@ const Index = () => {
     { address: "0x8765...4321", balance: "980", wins: 38 },
     { address: "0xabcd...efgh", balance: "750", wins: 29 },
   ]);
-  const [userNFTSkins, setUserNFTSkins] = useState<any[]>([]);
-  const [marketplaceNFTSkins, setMarketplaceNFTSkins] = useState<any[]>([]);
-  const [nextTokenId, setNextTokenId] = useState(1);
 
   const addActivity = (type: "success" | "error" | "info", message: string) => {
     const newActivity: Activity = {
@@ -290,198 +286,6 @@ const Index = () => {
     }
   };
 
-  const handleMintSkin = async (weaponType: number, rarity: number, name: string) => {
-    if (!connectedAddress) return;
-    
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      if (parseFloat(balance) < 100) {
-        throw new Error("Insufficient balance");
-      }
-      
-      setBalance((prev) => (parseFloat(prev) - 100).toString());
-      
-      const newSkin = {
-        tokenId: nextTokenId,
-        name,
-        weaponType,
-        rarity,
-        imageURI: `ipfs://skin-${nextTokenId}`,
-        owner: connectedAddress,
-        equipped: false,
-        forSale: false,
-      };
-      
-      setUserNFTSkins((prev) => [...prev, newSkin]);
-      setNextTokenId((prev) => prev + 1);
-      
-      addActivity("success", `Minted NFT skin: ${name}`);
-      toast.success("🎨 NFT Skin Minted!", {
-        description: `${name} added to your collection`,
-      });
-    } catch (error: any) {
-      addActivity("error", error.message || "Minting failed");
-      toast.error(error.message || "Transaction failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleEquipSkin = async (tokenId: number, weaponType: number) => {
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Unequip all skins of this weapon type first
-      setUserNFTSkins((prev) =>
-        prev.map((skin) =>
-          skin.weaponType === weaponType && skin.equipped
-            ? { ...skin, equipped: false }
-            : skin
-        )
-      );
-      
-      // Equip the selected skin
-      setUserNFTSkins((prev) =>
-        prev.map((skin) =>
-          skin.tokenId === tokenId ? { ...skin, equipped: true } : skin
-        )
-      );
-      
-      addActivity("success", "Skin equipped successfully");
-      toast.success("✨ Skin Equipped!", {
-        description: "Your weapon looks amazing!",
-      });
-    } catch (error) {
-      addActivity("error", "Failed to equip skin");
-      toast.error("Transaction failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleUnequipSkin = async (weaponType: number) => {
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      setUserNFTSkins((prev) =>
-        prev.map((skin) =>
-          skin.weaponType === weaponType ? { ...skin, equipped: false } : skin
-        )
-      );
-      
-      addActivity("info", "Skin unequipped");
-      toast.success("Skin unequipped");
-    } catch (error) {
-      addActivity("error", "Failed to unequip skin");
-      toast.error("Transaction failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleListForSale = async (tokenId: number, price: string) => {
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUserNFTSkins((prev) =>
-        prev.map((skin) =>
-          skin.tokenId === tokenId
-            ? { ...skin, forSale: true, price }
-            : skin
-        )
-      );
-      
-      const listedSkin = userNFTSkins.find((s) => s.tokenId === tokenId);
-      if (listedSkin) {
-        setMarketplaceNFTSkins((prev) => [
-          ...prev,
-          { ...listedSkin, forSale: true, price },
-        ]);
-      }
-      
-      addActivity("success", `Listed skin for ${price} BPT`);
-      toast.success("Listed for sale!", {
-        description: `Price: ${price} BPT`,
-      });
-    } catch (error) {
-      addActivity("error", "Failed to list skin");
-      toast.error("Transaction failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCancelListing = async (tokenId: number) => {
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setUserNFTSkins((prev) =>
-        prev.map((skin) =>
-          skin.tokenId === tokenId
-            ? { ...skin, forSale: false, price: undefined }
-            : skin
-        )
-      );
-      
-      setMarketplaceNFTSkins((prev) =>
-        prev.filter((skin) => skin.tokenId !== tokenId)
-      );
-      
-      addActivity("info", "Listing cancelled");
-      toast.success("Listing cancelled");
-    } catch (error) {
-      addActivity("error", "Failed to cancel listing");
-      toast.error("Transaction failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleBuySkin = async (tokenId: number) => {
-    if (!connectedAddress) return;
-    
-    setIsProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      
-      const skin = marketplaceNFTSkins.find((s) => s.tokenId === tokenId);
-      if (!skin) throw new Error("Skin not found");
-      
-      const price = parseFloat(skin.price);
-      if (parseFloat(balance) < price) {
-        throw new Error("Insufficient balance");
-      }
-      
-      setBalance((prev) => (parseFloat(prev) - price).toString());
-      
-      // Remove from original owner and marketplace
-      setMarketplaceNFTSkins((prev) =>
-        prev.filter((s) => s.tokenId !== tokenId)
-      );
-      
-      // Add to buyer's collection
-      setUserNFTSkins((prev) => [
-        ...prev,
-        { ...skin, owner: connectedAddress, forSale: false, price: undefined },
-      ]);
-      
-      addActivity("success", `Purchased ${skin.name} for ${price} BPT`);
-      toast.success("🎉 Purchase Successful!", {
-        description: `${skin.name} is now yours!`,
-      });
-    } catch (error: any) {
-      addActivity("error", error.message || "Purchase failed");
-      toast.error(error.message || "Transaction failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   return (
     <div 
@@ -577,19 +381,6 @@ const Index = () => {
               onStake={handleStake}
               onUnstake={handleUnstake}
               onClaimRewards={handleClaimRewards}
-              isProcessing={isProcessing}
-            />
-
-            {/* NFT Skins Module - Full Width */}
-            <NFTSkins
-              userSkins={userNFTSkins}
-              marketplaceSkins={marketplaceNFTSkins}
-              onMintSkin={handleMintSkin}
-              onEquipSkin={handleEquipSkin}
-              onUnequipSkin={handleUnequipSkin}
-              onListForSale={handleListForSale}
-              onCancelListing={handleCancelListing}
-              onBuySkin={handleBuySkin}
               isProcessing={isProcessing}
             />
           </div>
