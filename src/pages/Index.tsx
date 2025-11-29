@@ -11,7 +11,7 @@ import ActivityLog, { Activity } from "@/components/ActivityLog";
 import Leaderboard from "@/components/Leaderboard";
 import { Button } from "@/components/ui/button";
 import backgroundImage from "@/assets/battle-background.jpg";
-import { getContract, getContractReadOnly, formatTokenAmount, parseTokenAmount, addTokenToMetaMask } from "@/lib/blockchain";
+import { getContract, getContractReadOnly, formatTokenAmount, parseTokenAmount } from "@/lib/blockchain";
 import { BPT_ADDRESS } from "@/lib/contractInfo";
 
 const Index = () => {
@@ -338,19 +338,6 @@ const Index = () => {
     }
   };
 
-  const handleAddToMetaMask = async () => {
-    try {
-      const added = await addTokenToMetaMask();
-      if (added) {
-        toast.success("BPT token added to MetaMask!");
-        addActivity("success", "BPT token added to MetaMask");
-      }
-    } catch (error: any) {
-      console.error("Error adding token:", error);
-      toast.error("Failed to add token to MetaMask");
-      addActivity("error", "Failed to add token to MetaMask");
-    }
-  };
 
   return (
     <div 
@@ -393,22 +380,10 @@ const Index = () => {
             </h1>
             <p className="text-battle-glow text-lg font-semibold">ARENA FURY</p>
           </div>
-          <div className="flex items-center gap-3">
-            {connectedAddress && (
-              <Button
-                onClick={handleAddToMetaMask}
-                variant="outline"
-                className="border-primary/50 hover:border-primary text-primary hover:bg-primary/10"
-              >
-                <Wallet className="mr-2 h-4 w-4" />
-                Add BPT to MetaMask
-              </Button>
-            )}
-            <WalletConnect
-              onConnect={handleConnect}
-              connectedAddress={connectedAddress}
-            />
-          </div>
+          <WalletConnect
+            onConnect={handleConnect}
+            connectedAddress={connectedAddress}
+          />
         </header>
 
         {connectedAddress ? (
