@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Flame, Zap, Send, Coins, Crosshair } from "lucide-react";
-import ParticleEffects from "./ParticleEffects";
 
 interface BattleActionsProps {
   onWinMatch: () => void;
@@ -23,45 +22,21 @@ const BattleActions = ({
   const [transferAmount, setTransferAmount] = useState("");
   const [burnAmount, setBurnAmount] = useState("");
   const [showMuzzleFlash, setShowMuzzleFlash] = useState(false);
-  const [showBulletTracer, setShowBulletTracer] = useState(false);
-  const [showHitImpact, setShowHitImpact] = useState(false);
-  const [showExplosion, setShowExplosion] = useState(false);
 
   const handleWinMatch = () => {
     setShowMuzzleFlash(true);
-    setTimeout(() => {
-      setShowMuzzleFlash(false);
-      setShowBulletTracer(true);
-    }, 100);
-    setTimeout(() => {
-      setShowBulletTracer(false);
-      setShowHitImpact(true);
-    }, 300);
-    setTimeout(() => {
-      setShowHitImpact(false);
-      setShowExplosion(true);
-    }, 500);
-    setTimeout(() => setShowExplosion(false), 1000);
     onWinMatch();
+    setTimeout(() => setShowMuzzleFlash(false), 500);
   };
 
   return (
     <div className="space-y-6">
       <div className="glass-card p-6 rounded-xl border-2 border-destructive/30 relative overflow-hidden">
-        <ParticleEffects active={showMuzzleFlash} type="muzzle-flash" x={50} y={50} />
-        <ParticleEffects active={showBulletTracer} type="bullet-tracer" x={50} y={50} />
-        <ParticleEffects active={showHitImpact} type="hit-impact" x={70} y={40} />
-        <ParticleEffects active={showExplosion} type="explosion" x={75} y={45} />
-        
         {showMuzzleFlash && (
           <div className="absolute inset-0 bg-primary/30 animate-pulse pointer-events-none">
             <div className="absolute inset-0 fire-gradient opacity-50" />
           </div>
         )}
-        {showExplosion && (
-          <div className="absolute inset-0 bg-destructive/40 pointer-events-none animate-pulse" />
-        )}
-        
         <h3 className="text-xl font-bold mb-4 text-destructive flex items-center gap-2">
           <Flame className="w-6 h-6" />
           BATTLE ZONE
