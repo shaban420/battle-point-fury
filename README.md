@@ -1,73 +1,201 @@
-# Welcome to your Lovable project
+# BattlePoint — Arena Fury 🎮⚔️
 
-## Project info
+A Web3 gaming DApp where players earn BattlePoint Tokens (BPT) through intense battle arena gameplay. Built with React, TypeScript, and Solidity smart contracts.
 
-**URL**: https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599
+![Battle Arena](src/assets/battle-background.jpg)
 
-## How can I edit this code?
+## 🚀 Live Demo
 
-There are several ways of editing your application.
+**DApp URL**: https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599
 
-**Use Lovable**
+## 📋 Smart Contract Details
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599) and start prompting.
+### BattlePoint Token (BPT)
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Contract Address**: `0x488FC849743FD0d3f203cec1a133DCccFBb0FDB1`
+- **Network**: Sepolia Testnet
+- **Chain ID**: 11155111 (0xaa36a7)
+- **Token Standard**: ERC-20
+- **Decimals**: 18
+- **Symbol**: BPT
 
-**Use your preferred IDE**
+### Contract Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- ✅ **Win-to-Earn**: Mint BPT tokens for winning battles
+- ✅ **Weapon Upgrades**: Burn tokens to upgrade weapon stats (damage, accuracy, fire rate)
+- ✅ **Energy Boost**: Burn tokens to refill energy
+- ✅ **Token Staking**: Stake BPT tokens to earn passive rewards
+- ✅ **Token Transfers**: Send tokens to teammates
+- ✅ **Gas Optimized**: Packed structs and efficient storage patterns
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### View on Etherscan
 
-Follow these steps:
+[View Contract on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x488FC849743FD0d3f203cec1a133DCccFBb0FDB1)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+## 🎯 Key Features
+
+### Gameplay Systems
+- **Battle Rewards**: Win matches to earn BPT tokens instantly
+- **Weapon Arsenal**: Three weapon types (Rifle, Shotgun, Sniper) with unique stats
+- **Upgrade System**: Improve weapon damage, accuracy, and fire rate
+- **Energy Management**: Spend energy on battles, refill with tokens
+- **Staking Module**: Stake tokens for passive income
+
+### Web3 Integration
+- **MetaMask Connection**: Seamless wallet integration with Sepolia testnet
+- **Real Blockchain Transactions**: All actions trigger real on-chain transactions
+- **Player Dashboard**: View BPT balance, wins, energy, and weapon levels
+- **Activity Log**: Track all your blockchain transactions
+- **Leaderboard**: Compare stats with other players
+
+### Battle Arena Theme
+- Animated gun muzzle flashes and shooting sparks
+- Glowing fire-like gradients (orange/red/purple)
+- Moving battlefield background with smoke particles
+- Neon borders and glowing upgrade buttons
+- Floating stat cards with animations
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - UI components
+- **Lucide React** - Icons
+
+### Blockchain
+- **Solidity** - Smart contract language
+- **ethers.js v5** - Web3 library
+- **MetaMask** - Wallet provider
+- **Sepolia Testnet** - Development network
+
+## 📦 Installation & Setup
+
+### Prerequisites
+
+- Node.js & npm ([install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
+- MetaMask browser extension ([download here](https://metamask.io/download/))
+- Sepolia testnet ETH ([get from faucet](https://sepoliafaucet.com/))
+
+### Local Development
+
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### MetaMask Setup
 
-**Use GitHub Codespaces**
+1. Install MetaMask extension
+2. Switch to **Sepolia Test Network**
+3. Get test ETH from [Sepolia Faucet](https://sepoliafaucet.com/)
+4. Connect your wallet to the DApp
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🎮 How to Play
 
-## What technologies are used for this project?
+1. **Connect Wallet**: Click "Connect Wallet" and approve MetaMask connection
+2. **Win Battles**: Click "Win Match" to earn BPT tokens and energy
+3. **Upgrade Weapons**: Use tokens to improve your weapon stats
+4. **Boost Energy**: Refill your energy by burning tokens
+5. **Stake Tokens**: Earn passive rewards by staking BPT
+6. **Send Tokens**: Transfer tokens to other players
 
-This project is built with:
+## 📄 Smart Contract Source
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The BattlePoint Token contract is located at `contracts/BattlePointToken.sol`
 
-## How can I deploy this project?
+### Main Functions
 
-Simply open [Lovable](https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599) and click on Share -> Publish.
+```solidity
+// Mint tokens for winning
+function mintForWin(address player) external onlyOwner
 
-## Can I connect a custom domain to my Lovable project?
+// Upgrade weapon stats
+function upgradeWeapon(uint8 weaponId, uint8 statId) external
 
-Yes, you can!
+// Boost energy
+function energyBoost() external
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+// Staking functions
+function stake(uint256 amount) external
+function unstake(uint256 amount) external
+function claimRewards() public
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+// View functions
+function getPlayerStats(address player) external view
+function getWeaponStats(address player, uint8 weaponId) external view
+```
+
+## 🔧 Project Structure
+
+```
+├── contracts/
+│   └── BattlePointToken.sol      # Smart contract
+├── src/
+│   ├── assets/                   # Images and icons
+│   ├── components/
+│   │   ├── WalletConnect.tsx     # MetaMask connection
+│   │   ├── PlayerDashboard.tsx   # Stats display
+│   │   ├── BattleActions.tsx     # Win/Energy/Transfer
+│   │   ├── WeaponUpgrade.tsx     # Upgrade system
+│   │   ├── StakingModule.tsx     # Staking interface
+│   │   ├── Leaderboard.tsx       # Player rankings
+│   │   └── ActivityLog.tsx       # Transaction history
+│   ├── lib/
+│   │   ├── blockchain.ts         # Web3 utilities
+│   │   └── contractInfo.ts       # Contract ABI & address
+│   └── pages/
+│       └── Index.tsx             # Main game page
+├── README.md
+└── package.json
+```
+
+## 🚀 Deployment
+
+### Frontend Deployment
+
+Simply open [Lovable](https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599) and click on **Share → Publish**.
+
+### Smart Contract Deployment
+
+The contract is already deployed on Sepolia. To redeploy:
+
+1. Use Remix IDE or Hardhat
+2. Compile `contracts/BattlePointToken.sol`
+3. Deploy to Sepolia testnet
+4. Update `BPT_ADDRESS` in `src/lib/contractInfo.ts`
+
+## 🔗 Links
+
+- **Live DApp**: https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599
+- **Contract Address**: `0x488FC849743FD0d3f203cec1a133DCccFBb0FDB1`
+- **Sepolia Etherscan**: https://sepolia.etherscan.io/address/0x488FC849743FD0d3f203cec1a133DCccFBb0FDB1
+- **MetaMask**: https://metamask.io/
+- **Sepolia Faucet**: https://sepoliafaucet.com/
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## ⚠️ Disclaimer
+
+This is a testnet application for educational purposes. Do not use real funds or deploy to mainnet without proper auditing.
+
+---
+
+Built with ❤️ using Lovable, React, and Solidity
