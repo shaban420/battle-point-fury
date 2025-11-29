@@ -48,6 +48,13 @@ const Index = () => {
   const handleConnect = async (address: string, ethProvider: any) => {
     try {
       const web3Provider = new ethers.providers.Web3Provider(ethProvider);
+      const network = await web3Provider.getNetwork();
+      
+      if (network.chainId !== 11155111) {
+        toast.error("Please switch to Sepolia network");
+        addActivity("error", "Wrong network - switch to Sepolia");
+        return;
+      }
       
       setConnectedAddress(address);
       setProvider(web3Provider);
@@ -55,10 +62,10 @@ const Index = () => {
       await loadPlayerData(address);
       addActivity("success", "Wallet connected successfully");
       toast.success("Wallet connected to Sepolia!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Connection error:", error);
       addActivity("error", "Failed to connect wallet");
-      toast.error("Failed to connect wallet");
+      toast.error(error?.message || "Failed to connect wallet");
     }
   };
 
@@ -91,9 +98,11 @@ const Index = () => {
           armor: stats[3],
         }))
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading player data:", error);
-      toast.error("Failed to load player data");
+      const errorMsg = error?.reason || error?.message || "Failed to load player data. Please ensure you're on Sepolia network.";
+      toast.error(errorMsg);
+      addActivity("error", errorMsg);
     }
   };
 
@@ -102,7 +111,7 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       
       addActivity("info", "Submitting battle victory...");
       const tx = await contract.mintForWin(connectedAddress);
@@ -118,9 +127,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Battle action failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -130,7 +140,7 @@ const Index = () => {
   const handleEnergyBoost = async () => {
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       
       addActivity("info", "Boosting energy...");
       const tx = await contract.energyBoost();
@@ -146,9 +156,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Energy boost failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -160,7 +171,7 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Transferring ${amount} BPT...`);
@@ -177,9 +188,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Transfer failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -191,7 +203,7 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Burning ${amount} BPT...`);
@@ -208,9 +220,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Burn failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -220,7 +233,7 @@ const Index = () => {
   const handleUpgrade = async (weaponId: number, statId: number) => {
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       
       const statNames = ["damage", "range", "speed", "armor"];
       addActivity("info", `Upgrading weapon ${statNames[statId]}...`);
@@ -238,9 +251,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Upgrade failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -252,7 +266,7 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Staking ${amount} BPT...`);
@@ -269,9 +283,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Staking failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -283,7 +298,7 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Unstaking ${amount} BPT...`);
@@ -300,9 +315,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Unstaking failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
@@ -312,7 +328,7 @@ const Index = () => {
   const handleClaimRewards = async () => {
     setIsProcessing(true);
     try {
-      const contract = getContract();
+      const contract = await getContract();
       
       addActivity("info", "Claiming rewards...");
       const tx = await contract.claimRewards();
@@ -329,9 +345,10 @@ const Index = () => {
       });
     } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", error.message || "Claim failed");
+      const errorMsg = error?.reason || error?.message || "Transaction failed";
+      addActivity("error", errorMsg);
       toast.error("Transaction failed", {
-        description: error.reason || error.message,
+        description: errorMsg,
       });
     } finally {
       setIsProcessing(false);
