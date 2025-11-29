@@ -6,7 +6,7 @@ A Web3 gaming DApp where players earn BattlePoint Tokens (BPT) through intense b
 
 ## 🚀 Live Demo
 
-**DApp URL**: https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599
+Deploy your own instance to see it live!
 
 ## 📋 Smart Contract Details
 
@@ -165,7 +165,7 @@ function getWeaponStats(address player, uint8 weaponId) external view
 
 ### Frontend Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599) and click on **Share → Publish**.
+Build and deploy the frontend using standard React deployment methods (Vercel, Netlify, GitHub Pages, etc.).
 
 ### Smart Contract Deployment
 
@@ -178,7 +178,6 @@ The contract is already deployed on Sepolia. To redeploy:
 
 ## 🔗 Links
 
-- **Live DApp**: https://lovable.dev/projects/339be987-ad34-4cce-88ec-24c8eef90599
 - **Contract Address**: `0x488FC849743FD0d3f203cec1a133DCccFBb0FDB1`
 - **Sepolia Etherscan**: https://sepolia.etherscan.io/address/0x488FC849743FD0d3f203cec1a133DCccFBb0FDB1
 - **MetaMask**: https://metamask.io/
@@ -198,4 +197,4 @@ This is a testnet application for educational purposes. Do not use real funds or
 
 ---
 
-Built with ❤️ using Lovable, React, and Solidity
+Built with ❤️ using React, TypeScript, and Solidity
