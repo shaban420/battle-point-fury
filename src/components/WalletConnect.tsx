@@ -11,23 +11,43 @@ const WalletConnect = ({ onConnect, connectedAddress }: WalletConnectProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const connectWallet = async () => {
-    if (typeof window.ethereum === "undefined") {
-      alert("Please install MetaMask to use this DApp!");
+    // Check if MetaMask is installed
+    if (!window.ethereum) {
+      alert("MetaMask is not installed!\n\nPlease install MetaMask from https://metamask.io to use this DApp.");
+      window.open("https://metamask.io/download/", "_blank");
+      return;
+    }
+
+    // Check if it's actually MetaMask (not another wallet)
+    if (!window.ethereum.isMetaMask) {
+      alert("Please use MetaMask wallet to connect.");
       return;
     }
 
     try {
       setIsConnecting(true);
+      
+      // Request account access
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
       
-      if (accounts.length > 0) {
+      if (accounts && accounts.length > 0) {
         onConnect(accounts[0], window.ethereum);
+      } else {
+        throw new Error("No accounts found");
       }
-    } catch (error) {
-      console.error("Error connecting wallet:", error);
-      alert("Failed to connect wallet. Please try again.");
+    } catch (error: any) {
+      console.error("MetaMask connection error:", error);
+      
+      // Handle specific errors
+      if (error.code === 4001) {
+        alert("Connection rejected. Please approve the connection in MetaMask.");
+      } else if (error.code === -32002) {
+        alert("Connection request already pending. Please check MetaMask.");
+      } else {
+        alert(`Failed to connect: ${error.message || "Unknown error"}`);
+      }
     } finally {
       setIsConnecting(false);
     }
