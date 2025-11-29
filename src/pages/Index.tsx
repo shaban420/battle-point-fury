@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ethers } from "ethers";
 import { toast } from "sonner";
+import { Wallet } from "lucide-react";
 import WalletConnect from "@/components/WalletConnect";
 import PlayerDashboard from "@/components/PlayerDashboard";
 import WeaponUpgrade from "@/components/WeaponUpgrade";
@@ -8,30 +9,14 @@ import BattleActions from "@/components/BattleActions";
 import StakingModule from "@/components/StakingModule";
 import ActivityLog, { Activity } from "@/components/ActivityLog";
 import Leaderboard from "@/components/Leaderboard";
+import { Button } from "@/components/ui/button";
 import backgroundImage from "@/assets/battle-background.jpg";
-
-// Contract ABI (simplified for demo - in production, import full ABI)
-const CONTRACT_ABI = [
-  "function mintForWin(address player) external",
-  "function burn(uint256 amount) external",
-  "function transfer(address to, uint256 amount) external returns (bool)",
-  "function upgradeWeapon(uint8 weaponId, uint8 statId) external",
-  "function energyBoost() external",
-  "function stake(uint256 amount) external",
-  "function claimRewards() external",
-  "function unstake(uint256 amount) external",
-  "function balanceOf(address account) external view returns (uint256)",
-  "function getPlayerStats(address player) external view returns (uint256, uint256, uint256, uint256)",
-  "function getWeaponStats(address player, uint8 weaponId) external view returns (uint8, uint8, uint8, uint8)",
-];
-
-// Replace with your deployed contract address
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+import { getContract, getContractReadOnly, formatTokenAmount, parseTokenAmount, addTokenToMetaMask } from "@/lib/blockchain";
+import { BPT_ADDRESS } from "@/lib/contractInfo";
 
 const Index = () => {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [provider, setProvider] = useState<any>(null);
-  const [contract, setContract] = useState<any>(null);
   const [balance, setBalance] = useState("0");
   const [wins, setWins] = useState(0);
   const [energy, setEnergy] = useState(0);
@@ -63,28 +48,13 @@ const Index = () => {
   const handleConnect = async (address: string, ethProvider: any) => {
     try {
       const web3Provider = new ethers.providers.Web3Provider(ethProvider);
-      const signer = web3Provider.getSigner();
       
-      // For demo purposes, we'll simulate contract interactions
-      // In production, use actual deployed contract
-      if (CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") {
-        toast.info("Demo Mode: Using simulated contract interactions");
-        addActivity("info", "Connected in demo mode - deploy contract for full functionality");
-      }
-      
-      const contractInstance = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
       setConnectedAddress(address);
       setProvider(web3Provider);
-      setContract(contractInstance);
       
-      await loadPlayerData(address, contractInstance);
+      await loadPlayerData(address);
       addActivity("success", "Wallet connected successfully");
-      toast.success("Wallet connected!");
+      toast.success("Wallet connected to Sepolia!");
     } catch (error) {
       console.error("Connection error:", error);
       addActivity("error", "Failed to connect wallet");
@@ -92,21 +62,38 @@ const Index = () => {
     }
   };
 
-  const loadPlayerData = async (address: string, contractInstance: any) => {
+  const loadPlayerData = async (address: string) => {
     try {
-      // Demo mode - simulate data
-      setBalance("100");
-      setWins(5);
-      setEnergy(50);
-      setStakedAmount("50");
-      setPendingRewards("2.5");
+      const contract = getContractReadOnly();
       
-      // In production, load from contract:
-      // const balance = await contractInstance.balanceOf(address);
-      // const stats = await contractInstance.getPlayerStats(address);
-      // etc.
+      // Load balance
+      const balanceWei = await contract.balanceOf(address);
+      setBalance(formatTokenAmount(balanceWei));
+      
+      // Load player stats (wins, energy, stakedAmount, pendingRewards)
+      const stats = await contract.getPlayerStats(address);
+      setWins(stats[0].toNumber());
+      setEnergy(stats[1].toNumber());
+      setStakedAmount(formatTokenAmount(stats[2]));
+      setPendingRewards(formatTokenAmount(stats[3]));
+      
+      // Load weapon stats
+      const weaponPromises = [0, 1, 2].map((id) =>
+        contract.getWeaponStats(address, id)
+      );
+      const weaponData = await Promise.all(weaponPromises);
+      
+      setWeapons(
+        weaponData.map((stats) => ({
+          damage: stats[0],
+          range: stats[1],
+          speed: stats[2],
+          armor: stats[3],
+        }))
+      );
     } catch (error) {
       console.error("Error loading player data:", error);
+      toast.error("Failed to load player data");
     }
   };
 
@@ -115,24 +102,26 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      // Demo mode simulation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBalance((prev) => (parseFloat(prev) + 25).toString());
-      setWins((prev) => prev + 1);
-      setEnergy((prev) => Math.min(prev + 10, 100));
+      const contract = getContract();
+      
+      addActivity("info", "Submitting battle victory...");
+      const tx = await contract.mintForWin(connectedAddress);
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", "Victory! Earned 25 BPT");
       toast.success("🔥 VICTORY! +25 BPT", {
         description: "+10 Energy",
       });
-      
-      // In production:
-      // const tx = await contract.mintForWin(connectedAddress);
-      // await tx.wait();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error:", error);
-      addActivity("error", "Battle action failed");
-      toast.error("Transaction failed");
+      addActivity("error", error.message || "Battle action failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -141,17 +130,26 @@ const Index = () => {
   const handleEnergyBoost = async () => {
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setBalance((prev) => (parseFloat(prev) - 10).toString());
-      setEnergy((prev) => Math.min(prev + 50, 100));
+      const contract = getContract();
+      
+      addActivity("info", "Boosting energy...");
+      const tx = await contract.energyBoost();
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
       
       addActivity("success", "Energy boosted +50");
       toast.success("⚡ Energy Boosted!", {
         description: "+50 Energy",
       });
-    } catch (error) {
-      addActivity("error", "Energy boost failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Energy boost failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -162,16 +160,27 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBalance((prev) => (parseFloat(prev) - parseFloat(amount)).toString());
+      const contract = getContract();
+      const amountWei = parseTokenAmount(amount);
+      
+      addActivity("info", `Transferring ${amount} BPT...`);
+      const tx = await contract.transfer(to, amountWei);
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
       
       addActivity("success", `Transferred ${amount} BPT to teammate`);
       toast.success("Transfer successful!", {
         description: `Sent ${amount} BPT`,
       });
-    } catch (error) {
-      addActivity("error", "Transfer failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Transfer failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -182,16 +191,27 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setBalance((prev) => (parseFloat(prev) - parseFloat(amount)).toString());
+      const contract = getContract();
+      const amountWei = parseTokenAmount(amount);
+      
+      addActivity("info", `Burning ${amount} BPT...`);
+      const tx = await contract.burn(amountWei);
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
       
       addActivity("success", `Burned ${amount} BPT`);
       toast.success("Tokens burned!", {
         description: `Destroyed ${amount} BPT`,
       });
-    } catch (error) {
-      addActivity("error", "Burn failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Burn failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -200,25 +220,28 @@ const Index = () => {
   const handleUpgrade = async (weaponId: number, statId: number) => {
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBalance((prev) => (parseFloat(prev) - 50).toString());
+      const contract = getContract();
       
       const statNames = ["damage", "range", "speed", "armor"];
-      setWeapons((prev) =>
-        prev.map((weapon, idx) =>
-          idx === weaponId
-            ? { ...weapon, [statNames[statId]]: weapon[statNames[statId] as keyof typeof weapon] + 5 }
-            : weapon
-        )
-      );
+      addActivity("info", `Upgrading weapon ${statNames[statId]}...`);
+      
+      const tx = await contract.upgradeWeapon(weaponId, statId);
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
       
       addActivity("success", `Weapon upgraded: ${statNames[statId]} +5`);
       toast.success("Weapon Upgraded!", {
         description: `${statNames[statId].toUpperCase()} +5`,
       });
-    } catch (error) {
-      addActivity("error", "Upgrade failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Upgrade failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -229,17 +252,27 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBalance((prev) => (parseFloat(prev) - parseFloat(amount)).toString());
-      setStakedAmount((prev) => (parseFloat(prev) + parseFloat(amount)).toString());
+      const contract = getContract();
+      const amountWei = parseTokenAmount(amount);
+      
+      addActivity("info", `Staking ${amount} BPT...`);
+      const tx = await contract.stake(amountWei);
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
       
       addActivity("success", `Staked ${amount} BPT`);
       toast.success("Staking successful!", {
         description: `Staked ${amount} BPT`,
       });
-    } catch (error) {
-      addActivity("error", "Staking failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Staking failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -250,17 +283,27 @@ const Index = () => {
     
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBalance((prev) => (parseFloat(prev) + parseFloat(amount)).toString());
-      setStakedAmount((prev) => (parseFloat(prev) - parseFloat(amount)).toString());
+      const contract = getContract();
+      const amountWei = parseTokenAmount(amount);
+      
+      addActivity("info", `Unstaking ${amount} BPT...`);
+      const tx = await contract.unstake(amountWei);
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
       
       addActivity("success", `Unstaked ${amount} BPT`);
       toast.success("Unstaking successful!", {
         description: `Withdrew ${amount} BPT`,
       });
-    } catch (error) {
-      addActivity("error", "Unstaking failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Unstaking failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -269,23 +312,45 @@ const Index = () => {
   const handleClaimRewards = async () => {
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const rewards = parseFloat(pendingRewards);
-      setBalance((prev) => (parseFloat(prev) + rewards).toString());
-      setPendingRewards("0");
+      const contract = getContract();
       
+      addActivity("info", "Claiming rewards...");
+      const tx = await contract.claimRewards();
+      
+      addActivity("info", "Waiting for confirmation...");
+      await tx.wait();
+      
+      await loadPlayerData(connectedAddress!);
+      
+      const rewards = parseFloat(pendingRewards);
       addActivity("success", `Claimed ${rewards.toFixed(2)} BPT rewards`);
       toast.success("Rewards claimed!", {
         description: `Received ${rewards.toFixed(2)} BPT`,
       });
-    } catch (error) {
-      addActivity("error", "Claim failed");
-      toast.error("Transaction failed");
+    } catch (error: any) {
+      console.error("Error:", error);
+      addActivity("error", error.message || "Claim failed");
+      toast.error("Transaction failed", {
+        description: error.reason || error.message,
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleAddToMetaMask = async () => {
+    try {
+      const added = await addTokenToMetaMask();
+      if (added) {
+        toast.success("BPT token added to MetaMask!");
+        addActivity("success", "BPT token added to MetaMask");
+      }
+    } catch (error: any) {
+      console.error("Error adding token:", error);
+      toast.error("Failed to add token to MetaMask");
+      addActivity("error", "Failed to add token to MetaMask");
+    }
+  };
 
   return (
     <div 
@@ -328,10 +393,22 @@ const Index = () => {
             </h1>
             <p className="text-battle-glow text-lg font-semibold">ARENA FURY</p>
           </div>
-          <WalletConnect
-            onConnect={handleConnect}
-            connectedAddress={connectedAddress}
-          />
+          <div className="flex items-center gap-3">
+            {connectedAddress && (
+              <Button
+                onClick={handleAddToMetaMask}
+                variant="outline"
+                className="border-primary/50 hover:border-primary text-primary hover:bg-primary/10"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                Add BPT to MetaMask
+              </Button>
+            )}
+            <WalletConnect
+              onConnect={handleConnect}
+              connectedAddress={connectedAddress}
+            />
+          </div>
         </header>
 
         {connectedAddress ? (
