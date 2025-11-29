@@ -11,42 +11,57 @@ const WalletConnect = ({ onConnect, connectedAddress }: WalletConnectProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const connectWallet = async () => {
-    // Check if MetaMask is installed
-    if (!window.ethereum) {
-      alert("MetaMask is not installed!\n\nPlease install MetaMask from https://metamask.io to use this DApp.");
+    // Check if any injected provider exists
+    const anyEthereum = (window as any).ethereum;
+
+    if (!anyEthereum) {
+      alert(
+        "MetaMask is not detected.\n\nPlease install MetaMask from https://metamask.io or enable it for this browser profile."
+      );
       window.open("https://metamask.io/download/", "_blank");
       return;
     }
 
-    // Check if it's actually MetaMask (not another wallet)
-    if (!window.ethereum.isMetaMask) {
-      alert("Please use MetaMask wallet to connect.");
+    // Some browsers/wallets inject multiple providers (MetaMask, Coinbase, etc.)
+    // Prefer the MetaMask provider if available
+    let metamaskProvider = anyEthereum;
+
+    if (anyEthereum.providers && Array.isArray(anyEthereum.providers)) {
+      const mm = anyEthereum.providers.find((p: any) => p.isMetaMask);
+      if (mm) {
+        metamaskProvider = mm;
+      }
+    }
+
+    if (!metamaskProvider.request) {
+      alert("Detected wallet provider does not support the required API.");
       return;
     }
 
     try {
       setIsConnecting(true);
-      
-      // Request account access
-      const accounts = await window.ethereum.request({
+
+      // Request account access from the selected provider
+      const accounts: string[] = await metamaskProvider.request({
         method: "eth_requestAccounts",
       });
-      
+
       if (accounts && accounts.length > 0) {
-        onConnect(accounts[0], window.ethereum);
+        onConnect(accounts[0], metamaskProvider);
       } else {
-        throw new Error("No accounts found");
+        throw new Error("No accounts returned by wallet");
       }
     } catch (error: any) {
       console.error("MetaMask connection error:", error);
-      
-      // Handle specific errors
-      if (error.code === 4001) {
-        alert("Connection rejected. Please approve the connection in MetaMask.");
-      } else if (error.code === -32002) {
-        alert("Connection request already pending. Please check MetaMask.");
+
+      if (error?.code === 4001) {
+        // EIP-1193 userRejectedRequest error
+        alert("You rejected the connection request. Please approve it in MetaMask to continue.");
+      } else if (error?.code === -32002) {
+        // Request already pending
+        alert("A connection request is already pending in MetaMask. Please open MetaMask and complete it.");
       } else {
-        alert(`Failed to connect: ${error.message || "Unknown error"}`);
+        alert(`Failed to connect wallet: ${error?.message || "Unknown error"}`);
       }
     } finally {
       setIsConnecting(false);
