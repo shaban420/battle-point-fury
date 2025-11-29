@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
 import { toast } from "sonner";
-import { Wallet } from "lucide-react";
 import WalletConnect from "@/components/WalletConnect";
 import PlayerDashboard from "@/components/PlayerDashboard";
 import WeaponUpgrade from "@/components/WeaponUpgrade";
@@ -9,14 +8,12 @@ import BattleActions from "@/components/BattleActions";
 import StakingModule from "@/components/StakingModule";
 import ActivityLog, { Activity } from "@/components/ActivityLog";
 import Leaderboard from "@/components/Leaderboard";
-import { Button } from "@/components/ui/button";
 import backgroundImage from "@/assets/battle-background.jpg";
-import { getContract, getContractReadOnly, formatTokenAmount, parseTokenAmount } from "@/lib/blockchain";
-import { BPT_ADDRESS } from "@/lib/contractInfo";
+import { formatTokenAmount, parseTokenAmount } from "@/lib/blockchain";
+import { useWeb3 } from "@/contexts/Web3Context";
 
 const Index = () => {
-  const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
-  const [provider, setProvider] = useState<any>(null);
+  const { connectedAddress, contract, contractReadOnly, connectWallet } = useWeb3();
   const [balance, setBalance] = useState("0");
   const [wins, setWins] = useState(0);
   const [energy, setEnergy] = useState(0);
@@ -47,21 +44,12 @@ const Index = () => {
 
   const handleConnect = async (address: string, ethProvider: any) => {
     try {
-      const web3Provider = new ethers.providers.Web3Provider(ethProvider);
-      const network = await web3Provider.getNetwork();
-      
-      if (network.chainId !== 11155111) {
-        toast.error("Please switch to Sepolia network");
-        addActivity("error", "Wrong network - switch to Sepolia");
-        return;
+      const connectedAddr = await connectWallet(ethProvider);
+      if (connectedAddr) {
+        await loadPlayerData(connectedAddr);
+        addActivity("success", "Wallet connected successfully");
+        toast.success("Wallet connected to Sepolia!");
       }
-      
-      setConnectedAddress(address);
-      setProvider(web3Provider);
-      
-      await loadPlayerData(address);
-      addActivity("success", "Wallet connected successfully");
-      toast.success("Wallet connected to Sepolia!");
     } catch (error: any) {
       console.error("Connection error:", error);
       addActivity("error", "Failed to connect wallet");
@@ -69,26 +57,25 @@ const Index = () => {
     }
   };
 
-  const loadPlayerData = async (address: string) => {
+  const loadPlayerData = useCallback(async (address: string) => {
+    if (!contractReadOnly) return;
+    
     try {
-      const contract = getContractReadOnly();
+      // Batch all reads together for efficiency
+      const [balanceWei, stats, ...weaponData] = await Promise.all([
+        contractReadOnly.balanceOf(address),
+        contractReadOnly.getPlayerStats(address),
+        contractReadOnly.getWeaponStats(address, 0),
+        contractReadOnly.getWeaponStats(address, 1),
+        contractReadOnly.getWeaponStats(address, 2),
+      ]);
       
-      // Load balance
-      const balanceWei = await contract.balanceOf(address);
+      // Update all state in one batch
       setBalance(formatTokenAmount(balanceWei));
-      
-      // Load player stats (wins, energy, stakedAmount, pendingRewards)
-      const stats = await contract.getPlayerStats(address);
       setWins(stats[0].toNumber());
       setEnergy(stats[1].toNumber());
       setStakedAmount(formatTokenAmount(stats[2]));
       setPendingRewards(formatTokenAmount(stats[3]));
-      
-      // Load weapon stats
-      const weaponPromises = [0, 1, 2].map((id) =>
-        contract.getWeaponStats(address, id)
-      );
-      const weaponData = await Promise.all(weaponPromises);
       
       setWeapons(
         weaponData.map((stats) => ({
@@ -104,15 +91,13 @@ const Index = () => {
       toast.error(errorMsg);
       addActivity("error", errorMsg);
     }
-  };
+  }, [contractReadOnly]);
 
   const handleWinMatch = async () => {
-    if (!connectedAddress) return;
+    if (!connectedAddress || !contract) return;
     
     setIsProcessing(true);
     try {
-      const contract = await getContract();
-      
       addActivity("info", "Submitting battle victory...");
       const tx = await contract.mintForWin(connectedAddress);
       
@@ -138,17 +123,17 @@ const Index = () => {
   };
 
   const handleEnergyBoost = async () => {
+    if (!connectedAddress || !contract) return;
+    
     setIsProcessing(true);
     try {
-      const contract = await getContract();
-      
       addActivity("info", "Boosting energy...");
       const tx = await contract.energyBoost();
       
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", "Energy boosted +50");
       toast.success("⚡ Energy Boosted!", {
@@ -167,11 +152,10 @@ const Index = () => {
   };
 
   const handleTransfer = async (to: string, amount: string) => {
-    if (!to || !amount) return;
+    if (!to || !amount || !connectedAddress || !contract) return;
     
     setIsProcessing(true);
     try {
-      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Transferring ${amount} BPT...`);
@@ -180,7 +164,7 @@ const Index = () => {
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", `Transferred ${amount} BPT to teammate`);
       toast.success("Transfer successful!", {
@@ -199,11 +183,10 @@ const Index = () => {
   };
 
   const handleBurn = async (amount: string) => {
-    if (!amount) return;
+    if (!amount || !connectedAddress || !contract) return;
     
     setIsProcessing(true);
     try {
-      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Burning ${amount} BPT...`);
@@ -212,7 +195,7 @@ const Index = () => {
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", `Burned ${amount} BPT`);
       toast.success("Tokens burned!", {
@@ -231,10 +214,10 @@ const Index = () => {
   };
 
   const handleUpgrade = async (weaponId: number, statId: number) => {
+    if (!connectedAddress || !contract) return;
+    
     setIsProcessing(true);
     try {
-      const contract = await getContract();
-      
       const statNames = ["damage", "range", "speed", "armor"];
       addActivity("info", `Upgrading weapon ${statNames[statId]}...`);
       
@@ -243,7 +226,7 @@ const Index = () => {
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", `Weapon upgraded: ${statNames[statId]} +5`);
       toast.success("Weapon Upgraded!", {
@@ -262,11 +245,10 @@ const Index = () => {
   };
 
   const handleStake = async (amount: string) => {
-    if (!amount) return;
+    if (!amount || !connectedAddress || !contract) return;
     
     setIsProcessing(true);
     try {
-      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Staking ${amount} BPT...`);
@@ -275,7 +257,7 @@ const Index = () => {
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", `Staked ${amount} BPT`);
       toast.success("Staking successful!", {
@@ -294,11 +276,10 @@ const Index = () => {
   };
 
   const handleUnstake = async (amount: string) => {
-    if (!amount) return;
+    if (!amount || !connectedAddress || !contract) return;
     
     setIsProcessing(true);
     try {
-      const contract = await getContract();
       const amountWei = parseTokenAmount(amount);
       
       addActivity("info", `Unstaking ${amount} BPT...`);
@@ -307,7 +288,7 @@ const Index = () => {
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       addActivity("success", `Unstaked ${amount} BPT`);
       toast.success("Unstaking successful!", {
@@ -326,17 +307,17 @@ const Index = () => {
   };
 
   const handleClaimRewards = async () => {
+    if (!connectedAddress || !contract) return;
+    
     setIsProcessing(true);
     try {
-      const contract = await getContract();
-      
       addActivity("info", "Claiming rewards...");
       const tx = await contract.claimRewards();
       
       addActivity("info", "Waiting for confirmation...");
       await tx.wait();
       
-      await loadPlayerData(connectedAddress!);
+      await loadPlayerData(connectedAddress);
       
       const rewards = parseFloat(pendingRewards);
       addActivity("success", `Claimed ${rewards.toFixed(2)} BPT rewards`);
@@ -354,6 +335,13 @@ const Index = () => {
       setIsProcessing(false);
     }
   };
+
+  // Load player data when address changes (from account switch)
+  useEffect(() => {
+    if (connectedAddress && contractReadOnly) {
+      loadPlayerData(connectedAddress);
+    }
+  }, [connectedAddress, contractReadOnly, loadPlayerData]);
 
 
   return (
