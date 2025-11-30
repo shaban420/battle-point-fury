@@ -1,12 +1,15 @@
 # BattlePoint — Arena Fury 🎮⚔️
 
-A Web3 gaming DApp where players earn BattlePoint Tokens (BPT) through intense battle arena gameplay. Built with React, TypeScript, and Solidity smart contracts.
+A Web3 battle arena game where players earn BPT tokens by winning matches, upgrading weapons, boosting energy, staking tokens, and managing blockchain-driven gameplay.
 
 ![Battle Arena](src/assets/battle-background.jpg)
 
 ## 🚀 Live Demo
 
-Deploy your own instance to see it live!
+<img width="1570" height="707" alt="111" src="https://github.com/user-attachments/assets/50c29ecf-64de-4674-badd-3c2d36480dfb" />
+
+<img width="1544" height="695" alt="image" src="https://github.com/user-attachments/assets/e62cae23-030c-429a-af36-5ed8fe61869b" />
+
 
 ## 📋 Smart Contract Details
 
@@ -79,21 +82,6 @@ Deploy your own instance to see it live!
 - MetaMask browser extension ([download here](https://metamask.io/download/))
 - Sepolia testnet ETH ([get from faucet](https://sepoliafaucet.com/))
 
-### Local Development
-
-```bash
-# Clone the repository
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-The app will be available at `http://localhost:5173`
 
 ### MetaMask Setup
 
@@ -183,18 +171,11 @@ The contract is already deployed on Sepolia. To redeploy:
 - **MetaMask**: https://metamask.io/
 - **Sepolia Faucet**: https://sepoliafaucet.com/
 
-## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📝 License
-
-This project is open source and available under the MIT License.
 
 ## ⚠️ Disclaimer
 
 This is a testnet application for educational purposes. Do not use real funds or deploy to mainnet without proper auditing.
 
----
 
-Built with ❤️ using React, TypeScript, and Solidity
