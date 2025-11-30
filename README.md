@@ -159,7 +159,7 @@ Build and deploy the frontend using standard React deployment methods (Vercel, N
 
 The contract is already deployed on Sepolia. To redeploy:
 
-1. Use Remix IDE or Hardhat
+1. Use Remix IDE
 2. Compile `contracts/BattlePointToken.sol`
 3. Deploy to Sepolia testnet
 4. Update `BPT_ADDRESS` in `src/lib/contractInfo.ts`
