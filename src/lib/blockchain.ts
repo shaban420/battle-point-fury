@@ -54,7 +54,8 @@ export const getContractReadOnly = () => {
 };
 
 export const formatTokenAmount = (amount: ethers.BigNumber): string => {
-  return ethers.utils.formatEther(amount);
+  const formatted = ethers.utils.formatEther(amount);
+  return parseFloat(formatted).toFixed(3);
 };
 
 export const parseTokenAmount = (amount: string): ethers.BigNumber => {
